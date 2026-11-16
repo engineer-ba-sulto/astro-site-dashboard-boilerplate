@@ -1,0 +1,35 @@
+{
+  "name": "astro-site-dashboard-boilerplate",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "bun@1.4.4",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "mprocs",
+    "dev:web": "bun run --filter web dev",
+    "dev:dashboard": "bun run --filter dashboard dev",
+    "dev:api": "bun run --filter api dev",
+    "build": "bun run --filter web build && bun run --filter dashboard build && bun run --filter api build",
+    "check": "bun run --filter web check && bun run --filter dashboard check && bunx tsc -p apps/api --noEmit && bunx tsc -p packages/contact-form --noEmit && bunx tsc -p packages/site-config --noEmit && bunx tsc -p packages/auth --noEmit && bunx tsc -p packages/analytics --noEmit",
+    "test": "bun test",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "db:generate": "bun run --filter api db:generate",
+    "db:migrate:local": "bun run --filter api db:migrate:local",
+    "db:migrate:remote": "bun run --filter api db:migrate:remote",
+    "db:seed": "bun run --filter api db:seed"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.6.8",
+    "mprocs": "^0.9.6",
+    "typescript": "^6.0.3"
+  },
+  "trustedDependencies": [
+    "esbuild",
+    "sharp",
+    "workerd"
+  ]
+}

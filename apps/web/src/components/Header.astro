@@ -1,0 +1,34 @@
+---
+import { resolveSiteConfig } from "@repo/site-config";
+
+const site = resolveSiteConfig(import.meta.env.PUBLIC_SITE_URL);
+const accent =
+  site.nameAccent && site.name.endsWith(site.nameAccent)
+    ? {
+        lead: site.name.slice(0, -site.nameAccent.length),
+        mark: site.nameAccent,
+      }
+    : null;
+---
+
+<header class="sticky top-0 z-10 border-b border-line bg-white/95 backdrop-blur-sm">
+  <div class="mx-auto flex h-[68px] w-full max-w-[1080px] items-center justify-between px-5">
+    <a class="text-xl font-bold tracking-wide text-ink no-underline" href="/">{
+      accent ? (
+        <>
+          {accent.lead}
+          <span class="text-main">{accent.mark}</span>
+        </>
+      ) : (
+        site.name
+      )
+    }</a>
+    <nav class="flex items-center gap-7">
+      <a class="hidden text-[15px] text-ink no-underline hover:text-main md:inline" href="/#services">サービス</a>
+      <a class="hidden text-[15px] text-ink no-underline hover:text-main md:inline" href="/#flow">工事の流れ</a>
+      <a class="hidden text-[15px] text-ink no-underline hover:text-main md:inline" href="/#faq">よくある質問</a>
+      <a class="hidden text-[15px] text-ink no-underline hover:text-main md:inline" href="/#about">会社概要</a>
+      <a class="rounded-full bg-main px-4 py-2 text-sm text-white no-underline hover:bg-main-dark" href="/contact/">お問い合わせ</a>
+    </nav>
+  </div>
+</header>

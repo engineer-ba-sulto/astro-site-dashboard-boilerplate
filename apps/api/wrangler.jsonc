@@ -1,0 +1,37 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // Worker 名の既定。変える手順は docs/customization.md。
+  "name": "astro-site-dashboard-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-16",
+  "compatibility_flags": ["global_fetch_strictly_public"],
+  "observability": {
+    "enabled": true,
+    "traces": { "enabled": true }
+  },
+  "upload_source_maps": true,
+  // D1 は api だけが持つ。database_id はローカル用の仮 ID。
+  // 本番は `wrangler d1 create astro-site-dashboard-db` の ID に差し替える。
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "astro-site-dashboard-db",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "src/db/migrations"
+    }
+  ],
+  // period は 10 か 60 秒だけ。ここは 60 秒に 5 回の短い窓。
+  // 仕様の「10 分に 5 回」は同一 IP ハッシュの D1 件数で判定する。
+  "ratelimits": [
+    {
+      "name": "RATE_LIMITER",
+      "namespace_id": "1001",
+      "simple": { "limit": 5, "period": 60 }
+    }
+  ],
+  "vars": {
+    "DEMO_MODE": "false",
+    "WEB_ORIGIN": "http://localhost:4321",
+    "DASHBOARD_BASE_URL": "http://localhost:4322"
+  }
+}

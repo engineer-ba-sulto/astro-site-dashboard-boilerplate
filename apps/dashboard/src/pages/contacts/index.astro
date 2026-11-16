@@ -1,0 +1,205 @@
+---
+import {
+  contactListQuerySchema,
+  formatJst,
+  labelForCategory,
+  labelForStatus,
+} from "@repo/contact-form";
+import { NoticeToast } from "../../components/NoticeToast";
+import { badgeVariants, statusVariant } from "../../components/ui/badge";
+import DashboardLayout from "../../layouts/DashboardLayout.astro";
+import { apiRequest, type ContactList, readServerEnv } from "../../server/api";
+
+const env = readServerEnv();
+const parsed = contactListQuerySchema.safeParse({
+  status: Astro.url.searchParams.get("status") ?? undefined,
+  q: Astro.url.searchParams.get("q") ?? undefined,
+  page: Astro.url.searchParams.get("page") ?? 1,
+  perPage: 20,
+});
+const query = parsed.success
+  ? parsed.data
+  : { page: 1, perPage: 20, status: undefined, q: undefined };
+
+const params = new URLSearchParams();
+if (query.status) params.set("status", query.status);
+if (query.q) params.set("q", query.q);
+params.set("page", String(query.page));
+params.set("perPage", String(query.perPage));
+
+let list: ContactList | undefined;
+let newCount = 0;
+let loadError = "";
+try {
+  const [listResponse, countResponse] = await Promise.all([
+    apiRequest(env, `/api/admin/contacts?${params}`),
+    apiRequest(env, "/api/admin/contacts?status=new&perPage=1"),
+  ]);
+  if (!listResponse.ok) {
+    loadError = `一覧を取得できませんでした（${listResponse.status}）。api が起動しているか、サービストークンが一致しているか確認してください。`;
+  } else {
+    list = (await listResponse.json()) as ContactList;
+  }
+  if (countResponse.ok) {
+    newCount = ((await countResponse.json()) as ContactList).total;
+  }
+} catch {
+  loadError =
+    "api に接続できませんでした。`bun run dev:api` が 8787 で起動しているか確認してください。";
+}
+
+const tabs = [
+  { label: "すべて", value: "" },
+  { label: "未対応", value: "new" },
+  { label: "対応中", value: "in_progress" },
+  { label: "完了", value: "done" },
+  { label: "迷惑", value: "spam" },
+];
+
+const hrefFor = (next: { status?: string; page?: number; q?: string }) => {
+  const search = new URLSearchParams();
+  const status = next.status ?? query.status ?? "";
+  const q = next.q ?? query.q ?? "";
+  const page = next.page ?? 1;
+  if (status) search.set("status", status);
+  if (q) search.set("q", q);
+  if (page > 1) search.set("page", String(page));
+  const text = search.toString();
+  return text ? `/contacts/?${text}` : "/contacts/";
+};
+
+const csvParams = new URLSearchParams();
+if (query.status) csvParams.set("status", query.status);
+if (query.q) csvParams.set("q", query.q);
+const csvHref = csvParams.size ? `/contacts/export.csv?${csvParams}` : "/contacts/export.csv";
+
+const noticeKey = Astro.url.searchParams.get("notice");
+const notice =
+  noticeKey === "saved" ? "保存しました" : noticeKey === "deleted" ? "削除しました" : undefined;
+
+const total = list?.total ?? 0;
+const from = total === 0 ? 0 : (query.page - 1) * query.perPage + 1;
+const to = Math.min(query.page * query.perPage, total);
+const pages = Math.max(1, Math.ceil(total / query.perPage));
+
+const preview = (message: string) => message.replaceAll("\n", " ").slice(0, 42);
+---
+
+<DashboardLayout title="問い合わせ一覧">
+  <span slot="badge" class="rounded-full bg-primary px-1.5 text-[11px] leading-[18px] text-primary-foreground">{newCount}</span>
+  <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h1 class="m-0 text-[22px]">問い合わせ一覧</h1>
+      <p class="m-0 text-[13px] text-muted-foreground">全 {total} 件（未対応 {newCount} 件）</p>
+    </div>
+    <a class="inline-flex h-9 items-center rounded-md border border-border bg-background px-3.5 text-sm no-underline hover:bg-muted" href={csvHref}>CSV ダウンロード</a>
+  </div>
+
+  <form class="mb-3.5 flex flex-wrap gap-2.5" method="get">
+    {query.status && <input type="hidden" name="status" value={query.status} />}
+    <input
+      class="h-9 w-full rounded-md border border-border bg-background px-2.5 md:w-72"
+      type="search"
+      name="q"
+      value={query.q ?? ""}
+      placeholder="名前・メール・本文で検索"
+    />
+    <button class="h-9 rounded-md border border-border bg-background px-3" type="submit">検索</button>
+  </form>
+
+  <div class="mb-3.5 inline-flex gap-0.5 rounded-lg bg-muted p-0.5">
+    {
+      tabs.map((tab) => {
+        const active = (query.status ?? "") === tab.value;
+        return (
+          <a
+            class:list={[
+              "rounded-md px-3 py-1 text-[13px] no-underline",
+              active ? "bg-background font-semibold text-foreground shadow-sm" : "text-muted-foreground",
+            ]}
+            href={hrefFor({ status: tab.value, page: 1 })}
+          >
+            {tab.label}
+          </a>
+        );
+      })
+    }
+  </div>
+
+  {loadError && <p class="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-red-700">{loadError}</p>}
+
+  {
+    list && (
+      <div class="overflow-x-auto rounded-lg border border-border bg-background">
+        <table class="w-full border-collapse">
+          <thead>
+            <tr>
+              {["受信日時", "名前", "カテゴリ", "内容", "ステータス"].map((label) => (
+                <th class="border-b border-border px-3.5 py-2.5 text-left text-xs font-medium text-muted-foreground">
+                  {label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {list.items.length === 0 && (
+              <tr>
+                <td class="px-3.5 py-6 text-muted-foreground" colspan="5">
+                  該当する問い合わせはありません。
+                </td>
+              </tr>
+            )}
+            {list.items.map((item) => (
+              <tr class="hover:bg-zinc-50">
+                <td class="border-b border-border px-3.5 py-2.5 align-top">{formatJst(item.created_at)}</td>
+                <td class="border-b border-border px-3.5 py-2.5 align-top">
+                  <a class="font-medium text-foreground no-underline" href={`/contacts/${item.id}/`}>
+                    {item.status === "new" && (
+                      <span class="mr-1.5 inline-block size-2 rounded-full bg-blue-600 align-middle" />
+                    )}
+                    {item.name?.trim() ? item.name : "（名前なし）"}
+                  </a>
+                  <div class="text-xs text-muted-foreground">{item.email}</div>
+                </td>
+                <td class="border-b border-border px-3.5 py-2.5 align-top">{labelForCategory(item.category)}</td>
+                <td class="max-w-80 truncate border-b border-border px-3.5 py-2.5 align-top text-muted-foreground">
+                  {preview(item.message)}
+                </td>
+                <td class="border-b border-border px-3.5 py-2.5 align-top">
+                  <span class={badgeVariants({ variant: statusVariant(item.status) })}>
+                    {labelForStatus(item.status)}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )
+  }
+
+  {
+    list && total > 0 && (
+      <div class="mt-3.5 flex flex-wrap items-center justify-between gap-2 text-[13px] text-muted-foreground">
+        <span>
+          {total} 件中 {from}–{to} 件を表示
+        </span>
+        <div class="flex gap-1.5">
+          {query.page > 1 && (
+            <a class="rounded-md border border-border bg-background px-2.5 py-1 no-underline" href={hrefFor({ page: query.page - 1 })}>
+              前へ
+            </a>
+          )}
+          <span class="rounded-md bg-primary px-2.5 py-1 text-primary-foreground">{query.page}</span>
+          {query.page < pages && (
+            <a class="rounded-md border border-border bg-background px-2.5 py-1 no-underline" href={hrefFor({ page: query.page + 1 })}>
+              次へ
+            </a>
+          )}
+        </div>
+      </div>
+    )
+  }
+  <p class="mt-5 text-xs text-muted-foreground">表示しているデータは、ローカルのデータベースに入っているものです。サンプル投入は api の seed を使います。</p>
+  <NoticeToast client:load message={notice} />
+</DashboardLayout>

@@ -1,0 +1,16 @@
+---
+export const prerender = true;
+
+import SiteLayout from "../../layouts/SiteLayout.astro";
+---
+
+<SiteLayout title="送信完了" description="お問い合わせを受け付けました。">
+  <section class="px-5 py-24 text-center">
+    <h1 class="m-0 mb-3.5 text-[28px]">送信ありがとうございました</h1>
+    <p class="m-0 mb-8 text-muted">
+      内容を確認のうえ、原則として2営業日以内に担当者から返信します。<br />
+      しばらく経っても返信がない場合は、お手数ですがお電話ください。
+    </p>
+    <a class="rounded-full border border-main px-5 py-2.5 text-main no-underline hover:bg-main hover:text-white" href="/contact/">フォームへ戻る</a>
+  </section>
+</SiteLayout>
