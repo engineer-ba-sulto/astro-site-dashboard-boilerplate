@@ -1,0 +1,28 @@
+{
+  "name": "web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "deploy": "astro build && wrangler deploy",
+    "cf-typegen": "wrangler types"
+  },
+  "dependencies": {
+    "@astrojs/cloudflare": "^14.4.8",
+    "@astrojs/sitemap": "^3.7.5",
+    "@repo/analytics": "workspace:*",
+    "@repo/contact-form": "workspace:*",
+    "@repo/site-config": "workspace:*",
+    "astro": "^7.4.12"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.12",
+    "@tailwindcss/vite": "^4.3.5",
+    "tailwindcss": "^4.3.5",
+    "typescript": "^6.0.3",
+    "wrangler": "^4.162.0"
+  }
+}

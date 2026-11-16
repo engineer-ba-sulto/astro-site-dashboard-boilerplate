@@ -1,0 +1,107 @@
+---
+export const prerender = true;
+
+import { resolveSiteConfig } from "@repo/site-config";
+import { faqItems, pains, services, steps } from "../data/lp";
+import SiteLayout from "../layouts/SiteLayout.astro";
+
+const site = resolveSiteConfig(import.meta.env.PUBLIC_SITE_URL);
+---
+
+<SiteLayout title={site.name} description={site.description}>
+  <section class="border-b border-line bg-gradient-to-br from-[#eef3ec] to-[#f7f1e5] py-20">
+    <div class="mx-auto w-full max-w-[1080px] px-5">
+      <h1 class="m-0 mb-4 text-4xl leading-snug tracking-wide max-md:text-[28px]">
+        住まいの困りごとを、<br />近くの工務店へ気軽に。
+      </h1>
+      <p class="m-0 mb-7 max-w-xl text-muted">
+        （サンプル文）水まわりの小さな修繕から、間取りを変えるリフォームまで。地域密着で、見積もりは無料・しつこい営業はしません。
+      </p>
+      <div class="flex flex-wrap gap-3.5">
+        <a class="rounded-full bg-main px-5 py-2.5 text-white no-underline hover:bg-main-dark" href="/contact/">無料で相談する</a>
+        <a class="rounded-full border border-main px-5 py-2.5 text-main no-underline hover:bg-main hover:text-white" href="#services">サービスを見る</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="border-b border-line bg-[#fdf6e8] py-10">
+    <ul class="mx-auto grid w-full max-w-[1080px] grid-cols-1 gap-1.5 px-5 md:grid-cols-2 md:gap-x-8">
+      {pains.map((pain) => <li>{pain}</li>)}
+    </ul>
+  </div>
+
+  <section class="py-16" id="services">
+    <div class="mx-auto w-full max-w-[1080px] px-5">
+      <h2 class="m-0 mb-7 text-[26px]">対応できること</h2>
+      <div class="grid gap-5 md:grid-cols-3">
+        {
+          services.map((service) => (
+            <article class="rounded-[10px] border border-line bg-base p-6">
+              <div class="text-[13px] font-bold tracking-widest text-accent">{service.num}</div>
+              <h3 class="my-2 text-lg">{service.title}</h3>
+              <p class="m-0 text-sm text-muted">{service.body}</p>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="border-y border-line bg-surface py-16" id="flow">
+    <div class="mx-auto w-full max-w-[1080px] px-5">
+      <h2 class="m-0 mb-7 text-[26px]">工事の流れ</h2>
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {
+          steps.map((step, index) => (
+            <article class="rounded-[10px] border border-line bg-white p-5">
+              <div class="mb-2.5 flex size-8 items-center justify-center rounded-full bg-main font-bold text-white">
+                {index + 1}
+              </div>
+              <h3 class="m-0 mb-1.5 text-base">{step.title}</h3>
+              <p class="m-0 text-[13px] text-muted">{step.body}</p>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="py-16" id="faq">
+    <div class="mx-auto w-full max-w-[1080px] px-5">
+      <h2 class="m-0 mb-7 text-[26px]">よくある質問</h2>
+      <div class="max-w-3xl">
+        {
+          faqItems.map((item) => (
+            <details class="mb-3 rounded-[10px] border border-line bg-white px-5 py-4">
+              <summary class="cursor-pointer font-semibold">{item.question}</summary>
+              <p class="mb-0.5 mt-2.5 text-[15px] text-muted">{item.answer}</p>
+            </details>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="border-y border-line bg-surface py-16" id="about">
+    <div class="mx-auto w-full max-w-[1080px] px-5">
+      <h2 class="m-0 mb-7 text-[26px]">会社概要</h2>
+      <table class="w-full border-collapse bg-white text-[15px]">
+        <tbody>
+          <tr><th class="w-44 border border-line bg-[#f3f0e9] px-4 py-3 text-left">会社名</th><td class="border border-line px-4 py-3">{site.operatorName}</td></tr>
+          <tr><th class="border border-line bg-[#f3f0e9] px-4 py-3 text-left">所在地</th><td class="border border-line px-4 py-3">{site.address}</td></tr>
+          <tr><th class="border border-line bg-[#f3f0e9] px-4 py-3 text-left">電話</th><td class="border border-line px-4 py-3">{site.phone}（{site.phoneHours}）</td></tr>
+          <tr><th class="border border-line bg-[#f3f0e9] px-4 py-3 text-left">事業内容</th><td class="border border-line px-4 py-3">{site.business}</td></tr>
+          <tr><th class="border border-line bg-[#f3f0e9] px-4 py-3 text-left">対応エリア</th><td class="border border-line px-4 py-3">{site.area}</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="py-16 text-center">
+    <div class="mx-auto w-full max-w-[1080px] px-5">
+      <h2 class="m-0 mb-3 text-[26px]">まずは無料相談から</h2>
+      <p class="m-0 mb-5 text-muted">見積もりは無料です。小さな修繕の相談だけでも大丈夫です。</p>
+      <a class="rounded-full bg-main px-5 py-2.5 text-white no-underline hover:bg-main-dark" href="/contact/">お問い合わせフォームへ</a>
+    </div>
+  </section>
+</SiteLayout>

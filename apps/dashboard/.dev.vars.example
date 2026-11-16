@@ -1,0 +1,8 @@
+# ローカル開発用のダミーです。api の .dev.vars.example と対になる値です。
+CF_ACCESS_CLIENT_ID=local-dev-client-id
+CF_ACCESS_CLIENT_SECRET=local-dev-client-secret
+# 本番では Cloudflare Access のチームドメインと AUD を入れる。空なら開発時だけ検証を省略する。
+ACCESS_TEAM_DOMAIN=
+ACCESS_AUD=
+API_BASE_URL=http://localhost:8787
+PUBLIC_SITE_URL=http://localhost:4321
