@@ -1,0 +1,185 @@
+---
+import { categoryOptions } from "@repo/contact-form";
+
+const apiBase = (import.meta.env.PUBLIC_API_BASE_URL?.trim() || "http://localhost:8787").replace(
+  /\/$/,
+  "",
+);
+const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY?.trim() ?? "";
+const showTurnstile = /^[A-Za-z0-9_-]+$/.test(turnstileSiteKey);
+---
+
+<form class="max-w-[680px]" data-contact-form data-api-base={apiBase} novalidate>
+  <div class="mb-5">
+    <label class="mb-1.5 block font-semibold" for="name">
+      お名前<span class="ml-2 rounded bg-[#8f8d82] px-1.5 py-px align-middle text-[11px] text-white">任意</span>
+    </label>
+    <input
+      class="w-full rounded-lg border border-[#cfc9ba] bg-white px-3 py-2.5"
+      id="name"
+      name="name"
+      type="text"
+      maxlength="100"
+      autocomplete="name"
+      placeholder="例）山田 太郎"
+    />
+    <p class="mt-1 text-sm text-muted">空欄のままでも送信できます。</p>
+    <p class="mt-1 text-sm text-[#b3402a]" data-error-for="name"></p>
+  </div>
+
+  <div class="mb-5">
+    <label class="mb-1.5 block font-semibold" for="email">
+      メールアドレス<span class="ml-2 rounded bg-[#b3402a] px-1.5 py-px align-middle text-[11px] text-white">必須</span>
+    </label>
+    <input
+      class="w-full rounded-lg border border-[#cfc9ba] bg-white px-3 py-2.5"
+      id="email"
+      name="email"
+      type="email"
+      maxlength="254"
+      autocomplete="email"
+      placeholder="例）you@example.com"
+    />
+    <p class="mt-1 text-sm text-muted">返信はこのアドレス宛に送ります。</p>
+    <p class="mt-1 text-sm text-[#b3402a]" data-error-for="email"></p>
+  </div>
+
+  <div class="mb-5">
+    <label class="mb-1.5 block font-semibold" for="category">
+      お問い合わせの種類<span class="ml-2 rounded bg-[#8f8d82] px-1.5 py-px align-middle text-[11px] text-white">任意</span>
+    </label>
+    <select class="w-full rounded-lg border border-[#cfc9ba] bg-white px-3 py-2.5" id="category" name="category">
+      <option value="">選択してください</option>
+      {categoryOptions.map((option) => <option value={option.value}>{option.label}</option>)}
+    </select>
+    <p class="mt-1 text-sm text-[#b3402a]" data-error-for="category"></p>
+  </div>
+
+  <div class="mb-5">
+    <label class="mb-1.5 block font-semibold" for="message">
+      本文<span class="ml-2 rounded bg-[#b3402a] px-1.5 py-px align-middle text-[11px] text-white">必須</span>
+    </label>
+    <textarea
+      class="min-h-40 w-full rounded-lg border border-[#cfc9ba] bg-white px-3 py-2.5"
+      id="message"
+      name="message"
+      maxlength="5000"
+      placeholder="困っていること、場所、希望の時期などを分かる範囲でお書きください"
+    ></textarea>
+    <p class="mt-1 text-sm text-muted">5,000文字まで。原則として2営業日以内の返信を目安にしています。</p>
+    <p class="mt-1 text-sm text-[#b3402a]" data-error-for="message"></p>
+  </div>
+
+  <div class="absolute -left-[9999px]" aria-hidden="true">
+    <label>Website<input type="text" name="website" tabindex="-1" autocomplete="off" /></label>
+  </div>
+
+  {
+    showTurnstile && (
+      <div class="mb-5">
+        <div class="cf-turnstile" data-sitekey={turnstileSiteKey}></div>
+        <p class="mt-1 text-sm text-[#b3402a]" data-error-for="turnstile_token"></p>
+      </div>
+    )
+  }
+
+  <div class="mb-5 flex items-start gap-2.5 text-sm">
+    <input class="mt-1.5" id="privacy_agreed" name="privacy_agreed" type="checkbox" />
+    <label for="privacy_agreed">
+      <a href="/privacy/">プライバシーポリシー</a>に同意します
+    </label>
+  </div>
+  <p class="mt-1 text-sm text-[#b3402a]" data-error-for="privacy_agreed"></p>
+  <p class="mb-4 text-sm text-[#b3402a]" data-form-error hidden></p>
+  <button
+    class="cursor-pointer rounded-full border border-main bg-main px-8 py-3 text-base text-white hover:bg-main-dark disabled:cursor-wait disabled:opacity-60"
+    type="submit"
+  >
+    送信する
+  </button>
+</form>
+
+{
+  showTurnstile && (
+    <script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer />
+  )
+}
+
+<script>
+  import { trackContactSubmit } from "@repo/analytics";
+  import { contactInputSchema, fieldErrors } from "@repo/contact-form";
+
+  const form = document.querySelector<HTMLFormElement>("[data-contact-form]");
+  if (form) {
+    const button = form.querySelector<HTMLButtonElement>("button[type='submit']");
+    const banner = form.querySelector<HTMLElement>("[data-form-error]");
+    const fields = ["name", "email", "category", "message", "privacy_agreed", "turnstile_token"];
+
+    const showErrors = (errors: Record<string, string>) => {
+      for (const field of fields) {
+        const slot = form.querySelector<HTMLElement>(`[data-error-for="${field}"]`);
+        if (slot) slot.textContent = errors[field] ?? "";
+      }
+    };
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (banner) {
+        banner.hidden = true;
+        banner.textContent = "";
+      }
+      const data = new FormData(form);
+      const turnstile = form.querySelector<HTMLTextAreaElement | HTMLInputElement>(
+        "[name='cf-turnstile-response']",
+      );
+      const payload = {
+        name: String(data.get("name") ?? ""),
+        email: String(data.get("email") ?? ""),
+        category: String(data.get("category") ?? ""),
+        message: String(data.get("message") ?? ""),
+        privacy_agreed: data.get("privacy_agreed") === "on",
+        website: String(data.get("website") ?? ""),
+        turnstile_token: turnstile?.value ?? "",
+      };
+      const parsed = contactInputSchema.safeParse(payload);
+      const errors = parsed.success ? {} : fieldErrors(parsed.error);
+      const siteKey = document.querySelector(".cf-turnstile");
+      if (siteKey && !payload.turnstile_token) {
+        errors.turnstile_token = "ボット確認を完了してください";
+      }
+      showErrors(errors);
+      if (!parsed.success || errors.turnstile_token) return;
+
+      if (button) button.disabled = true;
+      let sent = false;
+      try {
+        const response = await fetch(`${form.dataset.apiBase}/api/contact`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(parsed.data),
+        });
+        if (!response.ok) {
+          const body = (await response.json().catch(() => null)) as {
+            error?: { message?: string };
+          } | null;
+          if (banner) {
+            banner.hidden = false;
+            banner.textContent =
+              body?.error?.message ?? "送信できませんでした。時間をおいて再度お試しください。";
+          }
+          return;
+        }
+        trackContactSubmit({ category: parsed.data.category });
+        sent = true;
+        window.location.href = "/contact/thanks/";
+      } catch {
+        if (banner) {
+          banner.hidden = false;
+          banner.textContent = "通信に失敗しました。入力内容はそのままです。";
+        }
+      } finally {
+        if (button && !sent) button.disabled = false;
+      }
+    });
+  }
+</script>

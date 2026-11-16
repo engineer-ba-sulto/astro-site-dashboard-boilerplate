@@ -1,0 +1,12 @@
+# ローカル開発用のダミーです。実在の鍵は書かないでください。
+# `cp .dev.vars.example .dev.vars` してから `bun run dev` します。
+IP_HASH_SECRET=local-dev-ip-hash-secret-change-me
+TURNSTILE_SECRET_KEY=
+RESEND_API_KEY=
+CONTACT_NOTIFY_TO=
+CONTACT_FROM=
+CF_ACCESS_CLIENT_ID=local-dev-client-id
+CF_ACCESS_CLIENT_SECRET=local-dev-client-secret
+DEMO_MODE=false
+WEB_ORIGIN=http://localhost:4321
+DASHBOARD_BASE_URL=http://localhost:4322
