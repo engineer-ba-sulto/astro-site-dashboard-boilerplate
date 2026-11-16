@@ -73,7 +73,3 @@ EC、予約、会員登録、決済、複数管理者、多言語、記事とお
 ## 依存の更新
 
 Dependabot や Renovate は入れていません。更新するときは、対象の `package.json` を直してからルートで `bun install` し、`bun run check`、`bun test`、`bun run build` が通ることを確認して lockfile をコミットします。
-
-## ライセンス
-
-[MIT](LICENSE)
