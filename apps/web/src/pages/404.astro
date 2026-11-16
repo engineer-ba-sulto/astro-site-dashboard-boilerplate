@@ -1,0 +1,13 @@
+---
+export const prerender = true;
+
+import SiteLayout from "../layouts/SiteLayout.astro";
+---
+
+<SiteLayout title="ページが見つかりません">
+  <section class="px-5 py-24 text-center">
+    <h1 class="m-0 mb-3 text-[28px]">ページが見つかりません</h1>
+    <p class="mb-6 text-muted">アドレスをご確認いただくか、トップページからお探しください。</p>
+    <a class="text-main" href="/">トップへ戻る</a>
+  </section>
+</SiteLayout>

@@ -1,0 +1,41 @@
+---
+import { resolveSiteConfig } from "@repo/site-config";
+import { faqItems } from "../data/lp";
+
+const site = resolveSiteConfig(import.meta.env.PUBLIC_SITE_URL);
+
+const localBusiness: Record<string, unknown> = {
+  "@context": "https://schema.org",
+  "@type": "LocalBusiness",
+};
+if (site.name) localBusiness.name = site.name;
+if (site.description) localBusiness.description = site.description;
+if (site.url) localBusiness.url = site.url;
+if (site.phone) localBusiness.telephone = site.phone;
+if (site.email) localBusiness.email = site.email;
+if (site.address) {
+  localBusiness.address = {
+    "@type": "PostalAddress",
+    streetAddress: site.address,
+  };
+}
+if (site.area) localBusiness.areaServed = site.area;
+
+const faqPage = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faqItems.map((item) => ({
+    "@type": "Question",
+    name: item.question,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: item.answer,
+    },
+  })),
+};
+
+const json = (value: unknown) => JSON.stringify(value).replaceAll("<", "\\u003c");
+---
+
+<script type="application/ld+json" set:html={json(localBusiness)} />
+<script type="application/ld+json" set:html={json(faqPage)} />

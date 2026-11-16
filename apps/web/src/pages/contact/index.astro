@@ -1,0 +1,18 @@
+---
+export const prerender = true;
+
+import ContactForm from "../../components/ContactForm.astro";
+import SiteLayout from "../../layouts/SiteLayout.astro";
+---
+
+<SiteLayout title="お問い合わせ" description="お問い合わせフォーム。必須はメールアドレスと本文だけです。">
+  <section class="py-16">
+    <div class="mx-auto w-full max-w-[1080px] px-5">
+      <h1 class="m-0 mb-4 text-[30px]">お問い合わせ</h1>
+      <p class="mb-8 max-w-[680px] text-muted">
+        （サンプル文）必須項目はメールアドレスと本文だけです。お名前は任意です。送信すると完了画面に進みます。返信の目安は2営業日以内です。
+      </p>
+      <ContactForm />
+    </div>
+  </section>
+</SiteLayout>

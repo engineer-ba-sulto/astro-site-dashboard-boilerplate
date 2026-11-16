@@ -1,0 +1,32 @@
+---
+const ga = import.meta.env.PUBLIC_GA4_MEASUREMENT_ID?.trim() ?? "";
+const cf = import.meta.env.PUBLIC_CF_WEB_ANALYTICS_TOKEN?.trim() ?? "";
+const safeGa = /^G-[A-Za-z0-9]+$/.test(ga) ? ga : "";
+const safeCf = /^[A-Za-z0-9_-]+$/.test(cf) ? cf : "";
+---
+
+{
+  safeGa && (
+    <>
+      <script async src={`https://www.googletagmanager.com/gtag/js?id=${safeGa}`}></script>
+      <script is:inline define:vars={{ safeGa }}>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() {
+          dataLayer.push(arguments);
+        }
+        window.gtag = gtag;
+        gtag("js", new Date());
+        gtag("config", safeGa);
+      </script>
+    </>
+  )
+}
+{
+  safeCf && (
+    <script
+      defer
+      src="https://static.cloudflareinsights.com/beacon.min.js"
+      data-cf-beacon={JSON.stringify({ token: safeCf })}
+    ></script>
+  )
+}

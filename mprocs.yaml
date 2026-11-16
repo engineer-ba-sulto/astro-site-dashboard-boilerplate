@@ -1,0 +1,7 @@
+procs:
+  web:
+    shell: "cd apps/web && bun run dev"
+  dashboard:
+    shell: "cd apps/dashboard && bun run dev"
+  api:
+    shell: "cd apps/api && bun run dev"

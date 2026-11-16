@@ -1,0 +1,27 @@
+---
+import { resolveSiteConfig } from "@repo/site-config";
+
+const site = resolveSiteConfig(import.meta.env.PUBLIC_SITE_URL);
+const year = 2026;
+---
+
+<footer class="bg-footer px-0 pt-12 pb-7 text-sm text-footer-text">
+  <div class="mx-auto w-full max-w-[1080px] px-5">
+    <div class="flex flex-wrap items-start justify-between gap-8">
+      <div>
+        <div class="mb-2 text-lg font-bold text-white">{site.name}</div>
+        <p class="m-0">
+          （サンプル）{site.address}<br />
+          電話 {site.phone}（{site.phoneHours}）
+        </p>
+      </div>
+      <ul class="m-0 grid list-none gap-2 p-0">
+        <li><a class="text-footer-text no-underline hover:text-white" href="/privacy/">プライバシーポリシー</a></li>
+        <li><a class="text-footer-text no-underline hover:text-white" href="/terms/">利用規約</a></li>
+      </ul>
+    </div>
+    <div class="mt-8 flex flex-wrap justify-between gap-2 border-t border-[#3a3b35] pt-4 text-xs text-[#8f8d82]">
+      <span>© {year} {site.operatorName}</span>
+    </div>
+  </div>
+</footer>

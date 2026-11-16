@@ -1,0 +1,21 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // Worker 名の既定。変える手順は docs/customization.md。
+  "name": "astro-site-dashboard-dashboard",
+  "compatibility_date": "2026-11-16",
+  "compatibility_flags": ["global_fetch_strictly_public"],
+  "main": "@astrojs/cloudflare/entrypoints/server",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true,
+    "traces": { "enabled": true }
+  },
+  // 本番デプロイ前に api の URL へ差し替える。秘密は wrangler secret に置く。
+  "vars": {
+    "API_BASE_URL": "http://localhost:8787",
+    "PUBLIC_SITE_URL": "http://localhost:4321"
+  }
+}

@@ -1,0 +1,48 @@
+---
+export const prerender = true;
+
+import { resolveSiteConfig } from "@repo/site-config";
+import SiteLayout from "../layouts/SiteLayout.astro";
+
+const site = resolveSiteConfig(import.meta.env.PUBLIC_SITE_URL);
+---
+
+<!-- 雛形であり法的助言ではない。そのまま使わず、実態に合わせて修正すること。必要なら法律の専門家へ相談すること。 -->
+<SiteLayout title="プライバシーポリシー" description="お問い合わせで取得する情報の取り扱い（サンプル文面）">
+  <article class="mx-auto w-full max-w-3xl px-5 pt-12 pb-16">
+    <h1 class="m-0 mb-2 text-[30px]">プライバシーポリシー</h1>
+    <p class="rounded-[10px] border border-[#ecd9ac] bg-[#fdf6e8] px-5 py-4 text-sm">
+      （サンプル文面）これは雛形であり、法的助言ではありません。そのまま使わず、実態に合わせて修正してください。必要に応じて法律の専門家へ相談してください。
+    </p>
+    <p class="text-[17px]">
+      {site.operatorName}（以下「当店」）は、お問い合わせフォームで取得する個人情報の取り扱いについて、以下のとおり定めます。
+    </p>
+    <h2 class="mt-9 border-l-4 border-main pl-3 text-[22px]">取得する情報</h2>
+    <p>
+      お問い合わせフォームでは、次の情報を取得します。お名前（任意、100文字まで）、メールアドレス、お問い合わせの種類（任意。一般的なご相談、工事・見積もりの相談、その他）、本文（1〜5000文字）。あわせて、不正送信の防止のため、送信元情報をハッシュ化した値とブラウザの情報を記録します（生の IP アドレスは保存しません）。
+    </p>
+    <h2 class="mt-9 border-l-4 border-main pl-3 text-[22px]">利用目的</h2>
+    <p>取得した情報は、お問い合わせへの回答と、その後の対応のためにのみ利用します。目的の範囲を超えて利用することはありません。</p>
+    <h2 class="mt-9 border-l-4 border-main pl-3 text-[22px]">第三者への提供</h2>
+    <p>
+      法令に基づく場合を除き、本人の同意なく第三者に提供しません。なお、フォームの受付処理のため、次の外部サービスを利用します。各サービスには、処理に必要な範囲でのみ情報が渡ります。
+    </p>
+    <p>Cloudflare（サイトの配信、bot 対策の Turnstile）、Resend（管理者への通知メールの送信。設定している場合のみ）。</p>
+    <h2 class="mt-9 border-l-4 border-main pl-3 text-[22px]">Cookie と外部送信について</h2>
+    <p>
+      このサイトでは、アクセス解析のために Google Analytics 4 と Cloudflare Web Analytics を利用する場合があります。Google Analytics 4 は Cookie を使用して利用状況を計測します。計測に、お問い合わせの入力内容やメールアドレスを含めることはありません。計測用の ID やトークンが設定されていない環境では、解析ツール自体を読み込みません。
+    </p>
+    <h2 class="mt-9 border-l-4 border-main pl-3 text-[22px]">開示・訂正・削除の請求</h2>
+    <p>ご本人からの開示、訂正、削除の請求には、本人確認のうえで対応します。請求は下記の窓口までご連絡ください。</p>
+    <h2 class="mt-9 border-l-4 border-main pl-3 text-[22px]">お問い合わせ窓口</h2>
+    <p>
+      {site.operatorName}<br />
+      メール: {site.email} ／ 電話: {site.phone}（{site.phoneHours}）
+    </p>
+    <h2 class="mt-9 border-l-4 border-main pl-3 text-[22px]">改定</h2>
+    <p>
+      本ポリシーは、法令の変更や取り扱いの変更に応じて改定することがあります。改定した場合はこのページでお知らせします。<br />
+      制定日: 2026年11月1日（サンプル）
+    </p>
+  </article>
+</SiteLayout>
