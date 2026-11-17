@@ -26,24 +26,33 @@ dashboard（SSR）──サービストークン──▶ api ──▶ D1
 
 ## クイックスタート
 
-必要なものは [Bun](https://bun.sh) だけです。Node.js は使いません。
+必要なものは [Bun](https://bun.sh) だけです。Node.js は使いません。ルートの `packageManager` に書いてある版（いまは Bun 1.4 系）を入れてください。
 
 ```bash
+git clone https://github.com/engineer-ba-sulto/astro-site-dashboard-boilerplate.git
+cd astro-site-dashboard-boilerplate
 bun install
 cp apps/web/.env.example apps/web/.env
 cp apps/api/.dev.vars.example apps/api/.dev.vars
 cp apps/dashboard/.dev.vars.example apps/dashboard/.dev.vars
 bun run db:migrate:local
-bun run db:seed
+```
+
+`db:seed` は任意です。ローカル D1 にサンプルの問い合わせを 10 件入れ、管理画面の見た目を試せます。自分で送った行と区別したいときは、実行を省いても構いません。
+
+```bash
+bun run db:seed   # 任意
 bun run dev
 ```
 
-`bun run dev` は mprocs で3つの開発サーバーを同時に起動します。どれか1つだけなら `bun run dev:web`、`bun run dev:dashboard`、`bun run dev:api` です。
+`bun run dev` は mprocs で3つの開発サーバーを同時に起動します。どれか1つだけなら `bun run dev:web`、`bun run dev:dashboard`、`bun run dev:api` です。3つとも起動していることを確認してからフォームを送ってください。
 
 - サイト: http://localhost:4321/
 - お問い合わせ: http://localhost:4321/contact/
 - 管理画面: http://localhost:4322/contacts/
 - 死活確認: http://localhost:8787/api/health
+
+動作確認の目安: お問い合わせページから送信し、管理画面の一覧に新しい行が出ること（`db:seed` だけの 10 件に加えて 1 件増える、または seed なしなら 1 件だけ表示される）。手順の詳細や本番準備は [docs/setup.md](docs/setup.md) の「1. ローカル」を見てください。
 
 ローカルの管理画面は、Access のチームドメインと AUD が空のあいだだけ JWT 検証を省略します。本番ビルドでは未設定だと 403 になります。api と dashboard の `CF_ACCESS_CLIENT_ID` / `CF_ACCESS_CLIENT_SECRET` は、例のファイルでは同じダミー値です。本番では必ず差し替えてください。
 

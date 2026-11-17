@@ -31,7 +31,33 @@
 
 ## ローカル
 
-`.dev.vars.example` を `.dev.vars` にコピーし、`bun run db:migrate:local` のあと `bun run dev` です。D1 のファイルは `apps/api/.wrangler` にでき、git には入りません。
+リポジトリのルートで、README のクイックスタートと同じコピーとマイグレーションを行います。
+
+```bash
+cp apps/web/.env.example apps/web/.env
+cp apps/api/.dev.vars.example apps/api/.dev.vars
+cp apps/dashboard/.dev.vars.example apps/dashboard/.dev.vars
+bun run db:migrate:local
+bun run dev
+```
+
+web は `.env`、api と dashboard は `.dev.vars` に秘密や接続先を置きます。dashboard の `.env.example` は参考用で、ローカル開発では `.dev.vars` だけコピーすれば足ります。D1 のファイルは `apps/api/.wrangler` にでき、git には入りません。
+
+## Cloudflare アカウントなしで確認できること
+
+本番デプロイの前に、次までをローカルで確認できます。
+
+| 確認内容            | コマンド（ルート）                                                                      |
+| ------------------- | --------------------------------------------------------------------------------------- |
+| 型チェック          | `bun run check`                                                                         |
+| テスト              | `bun test`                                                                              |
+| 静的解析            | `bun run lint`                                                                          |
+| 3アプリのビルド     | `bun run build`（api は `wrangler deploy --dry-run` を含む）                            |
+| Worker のドライラン | `apps/web`・`apps/dashboard` で `bun run build` のあと `bunx wrangler deploy --dry-run` |
+
+ドライランでは、上の「環境変数」の表に載っているバインディング名（例: api の `DB`、`RATE_LIMITER`、dashboard の `API_BASE_URL`）が wrangler の出力に出るかを照合できます。web と dashboard は Astro のアダプタが `SESSION`（KV）と `IMAGES` を足すため、`wrangler.jsonc` に書いていなくても一覧に出ます。
+
+**アカウントがないと確認できないもの**: `wrangler login`、リモート D1 の作成と `bun run db:migrate:remote`、実際の `wrangler deploy`、カスタムドメイン・ルートの結線、Cloudflare Access / Turnstile / Resend の本番設定、本番 URL 間のフォーム送信と通知メールの到達です。
 
 ## 本番
 
