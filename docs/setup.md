@@ -4,26 +4,30 @@ Cloudflare アカウントがある前提で、ローカル起動から本番の
 
 ## 1. ローカル
 
+リポジトリを clone したあと、ルートで次を実行します（README のクイックスタートと同じです）。
+
 ```bash
 bun install
 cp apps/web/.env.example apps/web/.env
 cp apps/api/.dev.vars.example apps/api/.dev.vars
 cp apps/dashboard/.dev.vars.example apps/dashboard/.dev.vars
+bun run db:migrate:local
 ```
 
-`apps/api/.dev.vars` の `IP_HASH_SECRET` を、推測しにくい長い文字列に変えます。ローカルの `CF_ACCESS_CLIENT_ID` と `CF_ACCESS_CLIENT_SECRET` は、api と dashboard で同じ値にしてください。例のファイルは最初から揃っています。
+`apps/api/.dev.vars` の `IP_HASH_SECRET` は、例のままでもローカルは動きます。共有 PC や長期運用では、推測しにくい長い文字列に変えてください。ローカルの `CF_ACCESS_CLIENT_ID` と `CF_ACCESS_CLIENT_SECRET` は、api と dashboard で同じ値にしてください。例のファイルは最初から揃っています。
+
+`db:seed` は任意です（サンプル 10 件を入れます）。`@example.com` などのダミーだけで、実在の顧客データは入りません。
 
 ```bash
-bun run db:migrate:local
-bun run db:seed
+bun run db:seed   # 任意
 bun run dev
 ```
 
-`db:seed` は `@example.com` などのダミーを入れ直します。実在の顧客データは入りません。
-
 パッケージのインストール、ワークスペース、テストは Bun です。Astro と wrangler の公開 CLI は shebang が Node で、`bun --bun` で Bun ランタイムに強制するとローカルの workerd との接続が失敗します（開発サーバーが 503 になる、または Vite プラグインが ECONNREFUSED になる）。`bun run` はこれらの CLI をそのまま起動します。
 
-ブラウザで http://localhost:4321/contact/ から送信し、http://localhost:4322/contacts/ に行が増えることを確認します。
+`bun run dev` は3つのサーバーをまとめて起動します。一覧が空のときは `bun run dev:api` が 8787 で動いているか、dashboard と api のサービストークンが一致しているかを確認してください。
+
+ブラウザで http://localhost:4321/contact/ から送信し、http://localhost:4322/contacts/ に新しい行が増えることを確認します（`db:seed` を実行済みなら、サンプル 10 件に加えて 1 件増えます）。
 
 ## 2. D1 を作る
 
@@ -45,7 +49,12 @@ bun run db:migrate:remote
 
 ## 3. Worker をデプロイする
 
-先に api、次に web、最後に dashboard です。dashboard の `API_BASE_URL` には、デプロイ後の api の URL を入れます。
+デプロイの**前**に、本番の URL を設定ファイルへ書きます。
+
+- `apps/api/wrangler.jsonc` の `vars` … `WEB_ORIGIN`（公開サイトのオリジン）、`DASHBOARD_BASE_URL`（管理画面の起点）
+- `apps/dashboard/wrangler.jsonc` の `vars` … `API_BASE_URL`（api の URL。dashboard デプロイ後もここを見る）
+
+api をデプロイして URL が分かったあと、dashboard の `API_BASE_URL` をその URL に直してから dashboard をデプロイします。
 
 ```bash
 cd apps/api && bunx wrangler deploy
@@ -53,13 +62,14 @@ cd apps/web && bun run deploy
 cd apps/dashboard && bun run deploy
 ```
 
-`apps/dashboard/wrangler.jsonc` の `API_BASE_URL` と `PUBLIC_SITE_URL`、`apps/api/wrangler.jsonc` の `WEB_ORIGIN` と `DASHBOARD_BASE_URL` を、本番の URL に変えてからデプロイします。web の公開 URL はビルド時に `PUBLIC_SITE_URL` として渡します。
+web はビルド時に `PUBLIC_SITE_URL` と `PUBLIC_API_BASE_URL` を渡します（フォームがブラウザから POST する api のオリジンが `PUBLIC_API_BASE_URL` です）。
 
 ```bash
+cd apps/web
 PUBLIC_SITE_URL=https://example.com PUBLIC_API_BASE_URL=https://api.example.com bun run deploy
 ```
 
-`PUBLIC_API_BASE_URL` は、ブラウザがフォームを POST する api のオリジンです。
+Cloudflare にログインしていない場合でも、`bun run build` と `bunx wrangler deploy --dry-run` でバンドルとバインディング名まで確認できます。一覧は [deployment.md](deployment.md) の「Cloudflare アカウントなしで確認できること」を参照してください。
 
 ## 4. シークレット
 
