@@ -80,7 +80,7 @@ export function registerContactRoutes(app: Hono<{ Bindings: ApiBindings }>) {
     async (c) => {
       const input = c.req.valid("json");
       if (!c.env.IP_HASH_SECRET) {
-        return errorJson(c, 500, "INTERNAL", "IP_HASH_SECRET が未設定です。");
+        return errorJson(c, 500, "INTERNAL", "内部エラーが発生しました");
       }
       const ipHash = await hashIp(clientIp(c.req.raw), c.env.IP_HASH_SECRET);
       const allowed = await bindingAllows(c.env.RATE_LIMITER, ipHash);

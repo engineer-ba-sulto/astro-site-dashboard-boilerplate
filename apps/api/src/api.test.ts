@@ -122,6 +122,18 @@ describe("api", () => {
     expect(body.error.code).toBe("VALIDATION_ERROR");
   });
 
+  test("IP_HASH_SECRET が無いときは一般的な 500 を返し、設定名を含めない", async () => {
+    const response = await postContact(bindings({ IP_HASH_SECRET: undefined }));
+    expect(response.status).toBe(500);
+    const text = await response.text();
+    expect(text).not.toContain("IP_HASH_SECRET");
+    const body = JSON.parse(text) as { error: { code: string; message: string } };
+    expect(body.error).toEqual({
+      code: "INTERNAL",
+      message: "内部エラーが発生しました",
+    });
+  });
+
   test("正常送信は 201 でレコードが増え、管理 API で読める", async () => {
     const env = bindings();
     const created = await postContact(env);
