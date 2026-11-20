@@ -40,7 +40,7 @@ LP の見出しや FAQ は `apps/web/src/data/lp.ts` です。FAQ の構造化�
 
 ## レート制限
 
-Cloudflare の Rate Limiting バインディングは、期間を 10 秒か 60 秒にしかできません。`wrangler.jsonc` では 60 秒に 5 回です。仕様の「10 分に 5 回」は、同じ IP ハッシュの保存件数が直近 10 分で 5 件以上なら 429 にする処理で満たしています。閾値は `apps/api/src/lib/ratelimit.ts` です。
+Cloudflare の Rate Limiting バインディングは、期間を 10 秒か 60 秒にしかできません。`wrangler.jsonc` では 60 秒に 5 回です。仕様の「10 分に 5 回」は、直近 10 分の受付が 5 件以上なら 429 にする処理で満たしています。数える単位は、IPv4 ではそのアドレス、IPv6 ではアドレス全体ではなく /64 の範囲です（末尾の端末番号だけ変えても同じ枠になります）。デモモードでもこの 10 分の上限は同じです。問い合わせの本文は保存しませんが、回数だけは IP のハッシュと時刻で数えます。閾値は `apps/api/src/lib/ratelimit.ts` です。
 
 ## Biome の astro ドメイン
 

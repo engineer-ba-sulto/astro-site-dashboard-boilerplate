@@ -65,7 +65,7 @@ Cloudflare へのデプロイ、Access、Turnstile、Resend、GA4 は [docs/setu
 - 送信完了 `/contact/thanks/`、プライバシーポリシー `/privacy/`、利用規約 `/terms/`
 - 管理画面での一覧・検索・ステータス・管理メモ・論理削除・CSV（BOM 付き UTF-8）
 - 通知メール（Resend）。キーが無いときは保存だけして成功する
-- `DEMO_MODE=true` のあいだは保存も通知もしない
+- `DEMO_MODE=true` のあいだは保存も通知もしない。送信回数の上限（10 分に 5 回）は通常と同じ
 
 ## ポリシー文面
 

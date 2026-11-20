@@ -86,7 +86,10 @@ const contact = response.ok ? ((await response.json()) as ContactJson) : undefin
               </div>
               <dl class="mt-4 grid grid-cols-[110px_1fr] gap-x-3.5 gap-y-2 text-xs text-muted-foreground">
                 <dt>送信元</dt>
-                <dd class="m-0">IP ハッシュ: {contact.ip_hash ?? "—"}（生の IP は保存しません）</dd>
+                <dd class="m-0">
+                  IP ハッシュ: {contact.ip_hash ?? "—"}（生の IP は保存しません。IPv6
+                  は同じネットワーク範囲で同じ値になります）
+                </dd>
                 <dt>ブラウザ</dt>
                 <dd class="m-0">{contact.user_agent ?? "—"}</dd>
               </dl>

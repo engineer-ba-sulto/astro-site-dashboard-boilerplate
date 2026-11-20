@@ -6,26 +6,26 @@
 
 ## 環境変数
 
-| 変数                            | 置き場所                           | 用途                                                | 未設定のとき                                    |
-| ------------------------------- | ---------------------------------- | --------------------------------------------------- | ----------------------------------------------- |
-| `PUBLIC_SITE_URL`               | web（ビルド時）/ dashboard の vars | サイトの正 URL。OGP、サイトマップ、canonical        | `http://localhost:4321`                         |
-| `PUBLIC_API_BASE_URL`           | web                                | ブラウザが `POST /api/contact` する api のオリジン  | `http://localhost:8787`                         |
-| `PUBLIC_GA4_MEASUREMENT_ID`     | web                                | GA4                                                 | タグを出さない                                  |
-| `PUBLIC_CF_WEB_ANALYTICS_TOKEN` | web                                | Cloudflare Web Analytics                            | タグを出さない                                  |
-| `PUBLIC_TURNSTILE_SITE_KEY`     | web                                | Turnstile ウィジェット                              | ウィジェットを出さない                          |
-| `API_BASE_URL`                  | dashboard                          | api の URL。サーバー側だけ                          | `http://localhost:8787`（本番では必ず本番 URL） |
-| `TURNSTILE_SECRET_KEY`          | api の secret                      | Turnstile 検証                                      | 検証をスキップ                                  |
-| `IP_HASH_SECRET`                | api の secret                      | IP の HMAC。生 IP は保存しない                      | 受付は 500。本番では必須                        |
-| `RESEND_API_KEY`                | api の secret                      | 通知メール                                          | 保存のみ                                        |
-| `CONTACT_NOTIFY_TO`             | api の secret                      | 通知の宛先                                          | キーがあっても送信しない                        |
-| `CONTACT_FROM`                  | api の secret                      | 通知の送信元。本番は認証済みドメイン                | 同上                                            |
-| `CF_ACCESS_CLIENT_ID`           | dashboard と api の secret         | 管理 API のサービストークン                         | 管理 API は 401                                 |
-| `CF_ACCESS_CLIENT_SECRET`       | dashboard と api の secret         | 同上                                                | 同上                                            |
-| `ACCESS_TEAM_DOMAIN`            | dashboard の secret                | Access JWT の発行者。例 `team.cloudflareaccess.com` | 本番ビルドは 403。開発サーバーは検証を省略      |
-| `ACCESS_AUD`                    | dashboard の secret                | Access アプリケーションの AUD                       | 同上                                            |
-| `DEMO_MODE`                     | api                                | `true` のあいだ保存も通知もしない                   | 通常動作                                        |
-| `WEB_ORIGIN`                    | api                                | CORS で許可するサイトのオリジン。カンマ区切り可     | ローカルの 4321 だけ許可                        |
-| `DASHBOARD_BASE_URL`            | api                                | 通知メールに入れる詳細 URL の起点                   | `http://localhost:4322`                         |
+| 変数                            | 置き場所                           | 用途                                                        | 未設定のとき                                    |
+| ------------------------------- | ---------------------------------- | ----------------------------------------------------------- | ----------------------------------------------- |
+| `PUBLIC_SITE_URL`               | web（ビルド時）/ dashboard の vars | サイトの正 URL。OGP、サイトマップ、canonical                | `http://localhost:4321`                         |
+| `PUBLIC_API_BASE_URL`           | web                                | ブラウザが `POST /api/contact` する api のオリジン          | `http://localhost:8787`                         |
+| `PUBLIC_GA4_MEASUREMENT_ID`     | web                                | GA4                                                         | タグを出さない                                  |
+| `PUBLIC_CF_WEB_ANALYTICS_TOKEN` | web                                | Cloudflare Web Analytics                                    | タグを出さない                                  |
+| `PUBLIC_TURNSTILE_SITE_KEY`     | web                                | Turnstile ウィジェット                                      | ウィジェットを出さない                          |
+| `API_BASE_URL`                  | dashboard                          | api の URL。サーバー側だけ                                  | `http://localhost:8787`（本番では必ず本番 URL） |
+| `TURNSTILE_SECRET_KEY`          | api の secret                      | Turnstile 検証                                              | 検証をスキップ                                  |
+| `IP_HASH_SECRET`                | api の secret                      | IP の HMAC。生 IP は保存しない                              | 受付は 500。本番では必須                        |
+| `RESEND_API_KEY`                | api の secret                      | 通知メール                                                  | 保存のみ                                        |
+| `CONTACT_NOTIFY_TO`             | api の secret                      | 通知の宛先                                                  | キーがあっても送信しない                        |
+| `CONTACT_FROM`                  | api の secret                      | 通知の送信元。本番は認証済みドメイン                        | 同上                                            |
+| `CF_ACCESS_CLIENT_ID`           | dashboard と api の secret         | 管理 API のサービストークン                                 | 管理 API は 401                                 |
+| `CF_ACCESS_CLIENT_SECRET`       | dashboard と api の secret         | 同上                                                        | 同上                                            |
+| `ACCESS_TEAM_DOMAIN`            | dashboard の secret                | Access JWT の発行者。例 `team.cloudflareaccess.com`         | 本番ビルドは 403。開発サーバーは検証を省略      |
+| `ACCESS_AUD`                    | dashboard の secret                | Access アプリケーションの AUD                               | 同上                                            |
+| `DEMO_MODE`                     | api                                | `true` のあいだ保存も通知もしない。10 分に 5 回の上限は同じ | 通常動作                                        |
+| `WEB_ORIGIN`                    | api                                | CORS で許可するサイトのオリジン。カンマ区切り可             | ローカルの 4321 だけ許可                        |
+| `DASHBOARD_BASE_URL`            | api                                | 通知メールに入れる詳細 URL の起点                           | `http://localhost:4322`                         |
 
 `PUBLIC_API_BASE_URL`、`WEB_ORIGIN`、`DASHBOARD_BASE_URL` は、ブラウザから api へ直接送ることと、通知メールに管理画面の URL を入れるために必要です。
 
@@ -71,6 +71,6 @@ web は `.env`、api と dashboard は `.dev.vars` に秘密や接続先を置�
 8. Access で dashboard のホストを保護する（Zero Trust の有効化には支払い方法の登録が必要）。それまで dashboard は 403
 9. 自分のアドレスでフォームを1件送り、管理画面で見えること、通知が届くこと（Resend を使う場合）を確認する。Access 設定前は `bunx wrangler d1 execute astro-site-dashboard-db --remote --command "SELECT id, email, created_at FROM contacts ORDER BY id DESC LIMIT 5"` で保存を確かめる
 
-デモ用に保存させたくない環境では、api の `DEMO_MODE` を `true` にします。本番の受付用 Worker とは別のデプロイにしてください。
+デモ用に保存させたくない環境では、api の `DEMO_MODE` を `true` にします。問い合わせの本文は保存せず、通知もしません。10 分に 5 回の上限は通常と同じで、その回数だけ IP のハッシュと時刻を残します。本番の受付用 Worker とは別のデプロイにしてください。
 
 CI はビルドまでです。デプロイは CI から行いません。
