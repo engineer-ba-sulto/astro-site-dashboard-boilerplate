@@ -294,6 +294,66 @@ describe("api", () => {
     expect(pulled).toBeLessThan(256 * 1024);
   });
 
+  test("JSON 以外の Content-Type は本文を読まず 400", async () => {
+    const env = bindings();
+    const saved = await createApp().fetch(
+      new Request("http://localhost/api/contact", {
+        method: "POST",
+        headers: {
+          "content-type": "text/plain",
+          origin: "http://localhost:4321",
+        },
+        body: JSON.stringify(validBody),
+      }),
+      env,
+    );
+    expect(saved.status).toBe(400);
+    expect(((await saved.json()) as { error: { code: string } }).error.code).toBe(
+      "VALIDATION_ERROR",
+    );
+    const missingType = await createApp().fetch(
+      new Request("http://localhost/api/contact", {
+        method: "POST",
+        headers: { origin: "http://localhost:4321" },
+        body: new TextEncoder().encode(JSON.stringify(validBody)),
+      }),
+      env,
+    );
+    expect(missingType.status).toBe(400);
+
+    let pulls = 0;
+    const stream = new ReadableStream({
+      pull(controller) {
+        pulls += 1;
+        if (pulls > 1) {
+          controller.error(new Error("body was read"));
+          return;
+        }
+        controller.enqueue(new TextEncoder().encode(JSON.stringify(validBody)));
+      },
+    });
+    const unread = await createApp().fetch(
+      new Request("http://localhost/api/contact", {
+        method: "POST",
+        headers: {
+          "content-type": "text/plain",
+          origin: "http://localhost:4321",
+        },
+        body: stream,
+      }),
+      env,
+    );
+    expect(unread.status).toBe(400);
+    expect(pulls).toBeLessThanOrEqual(1);
+
+    const headers = {
+      "cf-access-client-id": "local-dev-client-id",
+      "cf-access-client-secret": "local-dev-client-secret",
+    };
+    const list = await createApp().request("/api/admin/contacts", { headers }, env);
+    expect(((await list.json()) as { total: number }).total).toBe(0);
+  });
+
   test("デモモードではレコードが増えない", async () => {
     const env = bindings({ DEMO_MODE: "true" });
     const response = await postContact(env);

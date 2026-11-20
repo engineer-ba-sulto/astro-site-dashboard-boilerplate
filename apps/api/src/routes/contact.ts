@@ -17,6 +17,8 @@ import { notifyNewContact } from "../mail/notify";
 const MAX_CONTACT_BODY_BYTES = 64 * 1024;
 /** ハニーポット。超えた値は保存せず入力エラーにする。 */
 const MAX_WEBSITE_LENGTH = 200;
+/** `application/json` と `application/something+json`。パラメータは含めない。 */
+const JSON_MEDIA_TYPE = /^application\/([\w.-]+\+)?json$/i;
 
 const contactInsertSchema = createInsertSchema(contacts);
 
@@ -54,6 +56,10 @@ export function registerContactRoutes(app: Hono<{ Bindings: ApiBindings }>) {
     const saved = await countRecentByIp(db, ipHash, since);
     const demoAttempts = await countRecentAttempts(db, ipHash, since);
     if (saved + demoAttempts >= RATE_LIMIT_MAX) return rateLimited(c);
+
+    if (!isJsonMediaType(c.req.header("content-type"))) {
+      return errorJson(c, 400, "VALIDATION_ERROR", "入力内容を確認してください");
+    }
 
     const body = await readBodyLimited(c.req.raw, MAX_CONTACT_BODY_BYTES);
     if (!body.ok) {
@@ -137,6 +143,12 @@ export function registerContactRoutes(app: Hono<{ Bindings: ApiBindings }>) {
     });
     return c.json({ id }, 201);
   });
+}
+
+function isJsonMediaType(contentType: string | undefined): boolean {
+  if (!contentType) return false;
+  const mediaType = contentType.split(";")[0]?.trim() ?? "";
+  return JSON_MEDIA_TYPE.test(mediaType);
 }
 
 function rateLimited(c: Context) {
