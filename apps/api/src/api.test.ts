@@ -20,6 +20,7 @@ create table contacts (
 );
 create index contacts_status_created_at_idx on contacts (status, created_at);
 create index contacts_created_at_idx on contacts (created_at);
+create index contacts_ip_hash_created_at_idx on contacts (ip_hash, created_at);
 `;
 
 function createMemoryD1(): D1Database {
