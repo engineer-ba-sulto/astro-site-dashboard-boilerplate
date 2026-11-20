@@ -21,6 +21,11 @@ create table contacts (
 create index contacts_status_created_at_idx on contacts (status, created_at);
 create index contacts_created_at_idx on contacts (created_at);
 create index contacts_ip_hash_created_at_idx on contacts (ip_hash, created_at);
+create table contact_attempts (
+  id integer primary key autoincrement not null,
+  ip_hash text not null,
+  created_at integer not null
+);
 `;
 
 function createMemoryD1(): D1Database {
@@ -93,12 +98,20 @@ const validBody = {
   website: "",
 };
 
-function postContact(env: ApiBindings, body: unknown = validBody) {
+function postContact(
+  env: ApiBindings,
+  body: unknown = validBody,
+  headers: Record<string, string> = {},
+) {
   return createApp().request(
     "/api/contact",
     {
       method: "POST",
-      headers: { "content-type": "application/json", origin: "http://localhost:4321" },
+      headers: {
+        "content-type": "application/json",
+        origin: "http://localhost:4321",
+        ...headers,
+      },
       body: JSON.stringify(body),
     },
     env,
@@ -230,6 +243,89 @@ describe("api", () => {
     }
     const blocked = await postContact(env, { ...validBody, email: "sixth@example.com" });
     expect(blocked.status).toBe(429);
+  });
+
+  test("同じ IPv6 /64 は 10 分の上限を共有し、別の /64 は別枠", async () => {
+    const env = bindings();
+    for (let index = 0; index < 5; index += 1) {
+      const response = await postContact(
+        env,
+        { ...validBody, email: `v6${index}@example.com` },
+        { "cf-connecting-ip": `2001:db8:1:2::${index + 1}` },
+      );
+      expect(response.status).toBe(201);
+    }
+    const blocked = await postContact(
+      env,
+      { ...validBody, email: "blocked-v6@example.com" },
+      { "cf-connecting-ip": "2001:0db8:0001:0002:ffff:ffff:ffff:ffff" },
+    );
+    expect(blocked.status).toBe(429);
+    const other = await postContact(
+      env,
+      { ...validBody, email: "other-prefix@example.com" },
+      { "cf-connecting-ip": "2001:db8:1:3::1" },
+    );
+    expect(other.status).toBe(201);
+
+    const headers = {
+      "cf-access-client-id": "local-dev-client-id",
+      "cf-access-client-secret": "local-dev-client-secret",
+    };
+    const list = await createApp().request("/api/admin/contacts", { headers }, env);
+    const body = (await list.json()) as { items: Array<{ email: string; ip_hash: string }> };
+    const hashes = new Map(body.items.map((item) => [item.email, item.ip_hash]));
+    expect(hashes.get("v60@example.com")).toBe(hashes.get("v61@example.com"));
+    expect(hashes.get("v60@example.com")).not.toBe(hashes.get("other-prefix@example.com"));
+  });
+
+  test("IPv4 はアドレスごとに 10 分の上限を数える", async () => {
+    const env = bindings();
+    for (let index = 0; index < 5; index += 1) {
+      const response = await postContact(
+        env,
+        { ...validBody, email: `v4${index}@example.com` },
+        { "cf-connecting-ip": "203.0.113.10" },
+      );
+      expect(response.status).toBe(201);
+    }
+    const blocked = await postContact(
+      env,
+      { ...validBody, email: "v4-blocked@example.com" },
+      { "cf-connecting-ip": "203.0.113.10" },
+    );
+    expect(blocked.status).toBe(429);
+    const neighbor = await postContact(
+      env,
+      { ...validBody, email: "v4-neighbor@example.com" },
+      { "cf-connecting-ip": "203.0.113.11" },
+    );
+    expect(neighbor.status).toBe(201);
+  });
+
+  test("デモモードでも 10 分に 6 件目は 429 で、問い合わせは増えない", async () => {
+    const env = bindings({ DEMO_MODE: "true" });
+    for (let index = 0; index < 5; index += 1) {
+      const response = await postContact(
+        env,
+        { ...validBody, email: `demo${index}@example.com` },
+        { "cf-connecting-ip": `2001:db8:9:9::${index + 1}` },
+      );
+      expect(response.status).toBe(201);
+      expect(await response.json()).toEqual({ id: null });
+    }
+    const blocked = await postContact(
+      env,
+      { ...validBody, email: "demo-blocked@example.com" },
+      { "cf-connecting-ip": "2001:db8:9:9::ffff" },
+    );
+    expect(blocked.status).toBe(429);
+    const headers = {
+      "cf-access-client-id": "local-dev-client-id",
+      "cf-access-client-secret": "local-dev-client-secret",
+    };
+    const list = await createApp().request("/api/admin/contacts", { headers }, env);
+    expect(((await list.json()) as { total: number }).total).toBe(0);
   });
 
   test("CSV は BOM 付きで絞り込みに従う", async () => {

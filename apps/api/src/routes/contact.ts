@@ -4,11 +4,12 @@ import { createInsertSchema } from "drizzle-zod";
 import type { Hono } from "hono";
 import { cors } from "hono/cors";
 import type { ApiBindings } from "../bindings";
+import { countRecentAttempts, insertAttempt } from "../db/attempts";
 import { createDb } from "../db/client";
 import { countRecentByIp, insertContact } from "../db/contacts";
 import { contacts } from "../db/schema";
 import { errorJson } from "../lib/errors";
-import { clientIp, hashIp } from "../lib/ip";
+import { clientIp, hashIp, rateLimitSubject } from "../lib/ip";
 import { bindingAllows, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_SECONDS } from "../lib/ratelimit";
 import { verifyTurnstile } from "../lib/turnstile";
 import { notifyNewContact } from "../mail/notify";
@@ -82,7 +83,7 @@ export function registerContactRoutes(app: Hono<{ Bindings: ApiBindings }>) {
       if (!c.env.IP_HASH_SECRET) {
         return errorJson(c, 500, "INTERNAL", "内部エラーが発生しました");
       }
-      const ipHash = await hashIp(clientIp(c.req.raw), c.env.IP_HASH_SECRET);
+      const ipHash = await hashIp(rateLimitSubject(clientIp(c.req.raw)), c.env.IP_HASH_SECRET);
       const allowed = await bindingAllows(c.env.RATE_LIMITER, ipHash);
       if (!allowed) {
         return errorJson(
@@ -92,11 +93,13 @@ export function registerContactRoutes(app: Hono<{ Bindings: ApiBindings }>) {
           "送信回数の上限に達しました。しばらくしてから再度お試しください。",
         );
       }
-      if (c.env.DEMO_MODE === "true") return c.json({ id: null }, 201);
 
       const db = createDb(c.env.DB);
       const now = Math.floor(Date.now() / 1000);
-      const recent = await countRecentByIp(db, ipHash, now - RATE_LIMIT_WINDOW_SECONDS);
+      const since = now - RATE_LIMIT_WINDOW_SECONDS;
+      const saved = await countRecentByIp(db, ipHash, since);
+      const demoAttempts = await countRecentAttempts(db, ipHash, since);
+      const recent = saved + demoAttempts;
       if (recent >= RATE_LIMIT_MAX) {
         return errorJson(
           c,
@@ -104,6 +107,10 @@ export function registerContactRoutes(app: Hono<{ Bindings: ApiBindings }>) {
           "RATE_LIMITED",
           "送信回数の上限に達しました。しばらくしてから再度お試しください。",
         );
+      }
+      if (c.env.DEMO_MODE === "true") {
+        await insertAttempt(db, ipHash, now);
+        return c.json({ id: null }, 201);
       }
       const userAgent = c.req.header("user-agent")?.slice(0, 500) ?? null;
       const row = contactInsertSchema.parse({

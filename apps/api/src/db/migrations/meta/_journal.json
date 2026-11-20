@@ -15,6 +15,13 @@
       "when": 1795141663695,
       "tag": "0001_contacts_ip_hash_created_at",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1795142166434,
+      "tag": "0002_contact_attempts",
+      "breakpoints": true
     }
   ]
 }

@@ -1,5 +1,12 @@
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
+/** デモモードの受付回数。問い合わせ本文は置かず、上限の計算にだけ使う。 */
+export const contactAttempts = sqliteTable("contact_attempts", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  ipHash: text("ip_hash").notNull(),
+  createdAt: integer("created_at").notNull(),
+});
+
 export const contacts = sqliteTable(
   "contacts",
   {
