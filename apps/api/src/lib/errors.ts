@@ -10,7 +10,7 @@ export type ErrorCode =
 
 export function errorJson(
   c: Context,
-  status: 400 | 401 | 404 | 429 | 500,
+  status: 400 | 401 | 404 | 413 | 429 | 500,
   code: ErrorCode,
   message: string,
 ) {

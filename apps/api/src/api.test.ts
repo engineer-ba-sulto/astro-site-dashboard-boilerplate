@@ -210,6 +210,150 @@ describe("api", () => {
     expect(body.total).toBe(0);
   });
 
+  test("website は200文字までハニーポットとして扱う", async () => {
+    const env = bindings();
+    const response = await postContact(env, { ...validBody, website: "a".repeat(200) });
+    expect(response.status).toBe(201);
+    expect(await response.json()).toEqual({ id: null });
+    const headers = {
+      "cf-access-client-id": "local-dev-client-id",
+      "cf-access-client-secret": "local-dev-client-secret",
+    };
+    const list = await createApp().request("/api/admin/contacts", { headers }, env);
+    expect(((await list.json()) as { total: number }).total).toBe(0);
+  });
+
+  test("website が200文字を超えると保存せず 400", async () => {
+    const env = bindings();
+    const response = await postContact(env, { ...validBody, website: "a".repeat(201) });
+    expect(response.status).toBe(400);
+    expect(((await response.json()) as { error: { code: string } }).error.code).toBe(
+      "VALIDATION_ERROR",
+    );
+    const headers = {
+      "cf-access-client-id": "local-dev-client-id",
+      "cf-access-client-secret": "local-dev-client-secret",
+    };
+    const list = await createApp().request("/api/admin/contacts", { headers }, env);
+    expect(((await list.json()) as { total: number }).total).toBe(0);
+  });
+
+  test("本文5000文字は受け取れる", async () => {
+    const response = await postContact(bindings(), {
+      ...validBody,
+      message: "あ".repeat(5000),
+    });
+    expect(response.status).toBe(201);
+  });
+
+  test("本文が64KBを超えると 413 で保存しない", async () => {
+    const env = bindings();
+    const response = await postContact(env, {
+      ...validBody,
+      message: "あ".repeat(64 * 1024),
+    });
+    expect(response.status).toBe(413);
+    expect(await response.json()).toEqual({
+      error: { code: "VALIDATION_ERROR", message: "送信データが大きすぎます。" },
+    });
+    const headers = {
+      "cf-access-client-id": "local-dev-client-id",
+      "cf-access-client-secret": "local-dev-client-secret",
+    };
+    const list = await createApp().request("/api/admin/contacts", { headers }, env);
+    expect(((await list.json()) as { total: number }).total).toBe(0);
+  });
+
+  test("上限を超える本文は途中で読むのをやめる", async () => {
+    let pulled = 0;
+    const chunk = new Uint8Array(8 * 1024);
+    const stream = new ReadableStream({
+      pull(controller) {
+        pulled += chunk.byteLength;
+        if (pulled > 256 * 1024) {
+          controller.close();
+          return;
+        }
+        controller.enqueue(chunk);
+      },
+    });
+    const response = await createApp().fetch(
+      new Request("http://localhost/api/contact", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          origin: "http://localhost:4321",
+        },
+        body: stream,
+      }),
+      bindings(),
+    );
+    expect(response.status).toBe(413);
+    // 実行環境が1チャンク先読みすることがある。上限の直後で止まっていればよい。
+    expect(pulled).toBeLessThanOrEqual(64 * 1024 + chunk.byteLength * 2);
+    expect(pulled).toBeLessThan(256 * 1024);
+  });
+
+  test("JSON 以外の Content-Type は本文を読まず 400", async () => {
+    const env = bindings();
+    const saved = await createApp().fetch(
+      new Request("http://localhost/api/contact", {
+        method: "POST",
+        headers: {
+          "content-type": "text/plain",
+          origin: "http://localhost:4321",
+        },
+        body: JSON.stringify(validBody),
+      }),
+      env,
+    );
+    expect(saved.status).toBe(400);
+    expect(((await saved.json()) as { error: { code: string } }).error.code).toBe(
+      "VALIDATION_ERROR",
+    );
+    const missingType = await createApp().fetch(
+      new Request("http://localhost/api/contact", {
+        method: "POST",
+        headers: { origin: "http://localhost:4321" },
+        body: new TextEncoder().encode(JSON.stringify(validBody)),
+      }),
+      env,
+    );
+    expect(missingType.status).toBe(400);
+
+    let pulls = 0;
+    const stream = new ReadableStream({
+      pull(controller) {
+        pulls += 1;
+        if (pulls > 1) {
+          controller.error(new Error("body was read"));
+          return;
+        }
+        controller.enqueue(new TextEncoder().encode(JSON.stringify(validBody)));
+      },
+    });
+    const unread = await createApp().fetch(
+      new Request("http://localhost/api/contact", {
+        method: "POST",
+        headers: {
+          "content-type": "text/plain",
+          origin: "http://localhost:4321",
+        },
+        body: stream,
+      }),
+      env,
+    );
+    expect(unread.status).toBe(400);
+    expect(pulls).toBeLessThanOrEqual(1);
+
+    const headers = {
+      "cf-access-client-id": "local-dev-client-id",
+      "cf-access-client-secret": "local-dev-client-secret",
+    };
+    const list = await createApp().request("/api/admin/contacts", { headers }, env);
+    expect(((await list.json()) as { total: number }).total).toBe(0);
+  });
+
   test("デモモードではレコードが増えない", async () => {
     const env = bindings({ DEMO_MODE: "true" });
     const response = await postContact(env);
@@ -223,6 +367,20 @@ describe("api", () => {
     expect(((await list.json()) as { total: number }).total).toBe(0);
   });
 
+  test("Turnstile の秘密鍵が空なら確認をスキップして受け付ける", async () => {
+    const env = bindings({ TURNSTILE_SECRET_KEY: "" });
+    const response = await postContact(env);
+    expect(response.status).toBe(201);
+  });
+
+  test("Turnstile の秘密鍵があるのにトークンがないと確認失敗", async () => {
+    const response = await postContact(bindings({ TURNSTILE_SECRET_KEY: "test-turnstile-secret" }));
+    expect(response.status).toBe(400);
+    expect(((await response.json()) as { error: { code: string } }).error.code).toBe(
+      "TURNSTILE_FAILED",
+    );
+  });
+
   test("バインディングが拒否すると 429", async () => {
     const env = bindings({ RATE_LIMITER: { limit: async () => ({ success: false }) } });
     const response = await postContact(env);
@@ -230,6 +388,68 @@ describe("api", () => {
     expect(((await response.json()) as { error: { code: string } }).error.code).toBe(
       "RATE_LIMITED",
     );
+  });
+
+  test("レート制限の拒否は本文を読む前に返す", async () => {
+    let pulls = 0;
+    const stream = new ReadableStream({
+      pull(controller) {
+        pulls += 1;
+        if (pulls > 1) {
+          controller.error(new Error("body was read"));
+          return;
+        }
+        controller.enqueue(new TextEncoder().encode("{"));
+      },
+    });
+    const response = await createApp().fetch(
+      new Request("http://localhost/api/contact", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          origin: "http://localhost:4321",
+        },
+        body: stream,
+      }),
+      bindings({ RATE_LIMITER: { limit: async () => ({ success: false }) } }),
+    );
+    expect(response.status).toBe(429);
+    expect(pulls).toBeLessThanOrEqual(1);
+  });
+
+  test("10分の上限も本文を読む前に返す", async () => {
+    const env = bindings();
+    for (let index = 0; index < 5; index += 1) {
+      const response = await postContact(env, {
+        ...validBody,
+        email: `user${index}@example.com`,
+      });
+      expect(response.status).toBe(201);
+    }
+    let pulls = 0;
+    const stream = new ReadableStream({
+      pull(controller) {
+        pulls += 1;
+        if (pulls > 1) {
+          controller.error(new Error("body was read"));
+          return;
+        }
+        controller.enqueue(new TextEncoder().encode("{"));
+      },
+    });
+    const blocked = await createApp().fetch(
+      new Request("http://localhost/api/contact", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          origin: "http://localhost:4321",
+        },
+        body: stream,
+      }),
+      env,
+    );
+    expect(blocked.status).toBe(429);
+    expect(pulls).toBeLessThanOrEqual(1);
   });
 
   test("10分以内に6件目は 429", async () => {
