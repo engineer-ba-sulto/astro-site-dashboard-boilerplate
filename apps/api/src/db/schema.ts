@@ -19,5 +19,6 @@ export const contacts = sqliteTable(
   (table) => [
     index("contacts_status_created_at_idx").on(table.status, table.createdAt),
     index("contacts_created_at_idx").on(table.createdAt),
+    index("contacts_ip_hash_created_at_idx").on(table.ipHash, table.createdAt),
   ],
 );

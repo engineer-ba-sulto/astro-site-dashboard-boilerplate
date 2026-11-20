@@ -1,0 +1,1 @@
+CREATE INDEX `contacts_ip_hash_created_at_idx` ON `contacts` (`ip_hash`,`created_at`);
